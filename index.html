@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Светофор с фоном и анимацией</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background: linear-gradient(to bottom, #87CEEB, #1E90FF);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Фон - город и дорога */
+        .city-background {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 40%;
+            background: #2E8B57;
+        }
+        
+        .road {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 20%;
+            background: #696969;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .road-line {
+            position: absolute;
+            width: 100%;
+            height: 10px;
+            background: white;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.7;
+        }
+        
+        .building {
+            position: absolute;
+            bottom: 20%;
+            width: 80px;
+            background: #555;
+            border-top: 20px solid #444;
+        }
+        
+        .building:nth-child(1) {
+            height: 120px;
+            left: 10%;
+        }
+        
+        .building:nth-child(2) {
+            height: 180px;
+            left: 25%;
+        }
+        
+        .building:nth-child(3) {
+            height: 150px;
+            right: 20%;
+        }
+        
+        .building:nth-child(4) {
+            height: 100px;
+            right: 5%;
+        }
+        
+        .traffic-light {
+            display: inline-block;
+            background: #333;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            position: relative;
+            z-index: 10;
+            margin-top: 50px;
+        }
+        
+        .light {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        #red { background: #ff0000; }
+        #yellow { background: #ffff00; }
+        #green { background: #00ff00; }
+        
+        .light:active {
+            transform: scale(0.95);
+            box-shadow: inset 0 0 30px rgba(255, 255, 255, 0.8);
+        }
+        
+        .counter {
+            font-size: 24px;
+            margin: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            display: inline-block;
+            position: relative;
+            z-index: 10;
+        }
+        
+        #reset-btn {
+            padding: 12px 25px;
+            font-size: 18px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            position: relative;
+            z-index: 10;
+            transition: all 0.3s;
+        }
+        
+        #reset-btn:hover {
+            background: #555;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        h1 {
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            position: relative;
+            z-index: 10;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Светофор</h1>
+    
+    <!-- Фоновые элементы -->
+    <div class="city-background">
+        <div class="building"></div>
+        <div class="building"></div>
+        <div class="building"></div>
+        <div class="building"></div>
+    </div>
+    <div class="road">
+        <div class="road-line"></div>
+    </div>
+    
+    <!-- Основное содержимое -->
+    <div class="traffic-light">
+        <div id="red" class="light" onclick="countClick('red')"></div>
+        <div id="yellow" class="light" onclick="countClick('yellow')"></div>
+        <div id="green" class="light" onclick="countClick('green')"></div>
+    </div>
+    
+    <div class="counter">
+        Красный: <span id="red-counter">0</span> |
+        Жёлтый: <span id="yellow-counter">0</span> |
+        Зелёный: <span id="green-counter">0</span>
+    </div>
+    
+    <button id="reset-btn" onclick="resetCounters()">Сбросить счетчики</button>
+
+    <script>
+        // Загружаем сохранённые данные
+        let redClicks = localStorage.getItem('redClicks') || 0;
+        let yellowClicks = localStorage.getItem('yellowClicks') || 0;
+        let greenClicks = localStorage.getItem('greenClicks') || 0;
+
+        // Обновляем отображение
+        document.getElementById('red-counter').textContent = redClicks;
+        document.getElementById('yellow-counter').textContent = yellowClicks;
+        document.getElementById('green-counter').textContent = greenClicks;
+
+        function countClick(color) {
+            const light = document.getElementById(color);
+            
+            // Анимация: нажатие
+            light.style.transform = 'scale(0.95)';
+            light.style.boxShadow = 'inset 0 0 30px rgba(255, 255, 255, 0.8)';
+            setTimeout(() => {
+                light.style.transform = 'scale(1)';
+                light.style.boxShadow = 'inset 0 0 20px rgba(0, 0, 0, 0.5)';
+            }, 200);
+
+            // Увеличиваем счётчик
+            if (color === 'red') {
+                redClicks++;
+                document.getElementById('red-counter').textContent = redClicks;
+                localStorage.setItem('redClicks', redClicks);
+            } else if (color === 'yellow') {
+                yellowClicks++;
+                document.getElementById('yellow-counter').textContent = yellowClicks;
+                localStorage.setItem('yellowClicks', yellowClicks);
+            } else if (color === 'green') {
+                greenClicks++;
+                document.getElementById('green-counter').textContent = greenClicks;
+                localStorage.setItem('greenClicks', greenClicks);
+            }
+        }
+
+        function resetCounters() {
+            redClicks = 0;
+            yellowClicks = 0;
+            greenClicks = 0;
+            
+            document.getElementById('red-counter').textContent = '0';
+            document.getElementById('yellow-counter').textContent = '0';
+            document.getElementById('green-counter').textContent = '0';
+            
+            localStorage.setItem('redClicks', '0');
+            localStorage.setItem('yellowClicks', '0');
+            localStorage.setItem('greenClicks', '0');
+            
+            // Анимация кнопки
+            const btn = document.getElementById('reset-btn');
+            btn.style.transform = 'scale(1.1)';
+            setTimeout(() => { btn.style.transform = 'scale(1)'; }, 200);
+        }
+    </script>
+</body>
+</html>
