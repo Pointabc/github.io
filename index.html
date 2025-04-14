@@ -50,10 +50,6 @@
 			font-size: calc(16px + 1vw); /* Текст будет масштабироваться */
 			text-shadow: 0 0 3px white; /* Делаем текст читаемым на любом фоне */
 		}
-		.light.disabled {
-			opacity: 0.5;
-			cursor: not-allowed;
-		}
 		.light span {
 			transition: transform 0.2s;
 		}
@@ -155,56 +151,46 @@
         const db = firebase.database();
         const countersRef = db.ref('/'); // Работаем с корнем БД
 
+        
+
         // Загрузка данных из Firebase
         countersRef.on('value', (snapshot) => {
-			const data = snapshot.val() || { red: 0, yellow: 0, green: 0 };
-			counters = data;
-    
-			// Проверяем, были ли уже голоса
-			const totalVotes = data.red + data.yellow + data.green;
-			allowVoting = totalVotes === 0;
-    
-			updateUI();
-			document.getElementById('sync-status').textContent = 
-				allowVoting ? "Можно голосовать!" : "Голосование завершено! Сбросьте счетчики";
-		});
+            const data = snapshot.val() || { red: 0, yellow: 0, green: 0 };
+            counters = data;
+            updateUI();
+            document.getElementById('sync-status').textContent = "Синхронизировано";
+            console.log("Данные получены:", data);
+        }, (error) => {
+            console.error("Ошибка загрузки:", error);
+            document.getElementById('sync-status').textContent = "Ошибка загрузки";
+        });
 
         // Клик по цвету (атомарное обновление)
         function countClick(color) {
-			if (!allowVoting) {
-				document.getElementById('sync-status').textContent = "Голосование завершено! Сбросьте счетчики";
-				return; // Прекращаем выполнение если голосование запрещено
-			}
-    
-			// Разрешаем только одно нажатие
-			allowVoting = false;
-    
 			counters[color]++;
+			const counterElement = document.getElementById(`${color}-counter`);
+			counterElement.classList.add('changed');
+			setTimeout(() => counterElement.classList.remove('changed'), 200);
+    
 			updateUI();
 			countersRef.update({
 				[color]: firebase.database.ServerValue.increment(1)
-			}).then(() => {
-				document.getElementById('sync-status').textContent = "Голосование завершено!";
+				}).then(() => {
+					document.getElementById('sync-status').textContent = "Сохранено";
 			});
-    
-			// Анимация
-			const light = document.getElementById(color);
-			light.style.transform = 'scale(0.9)';
-			setTimeout(() => { light.style.transform = 'scale(1)'; }, 200);
 		}
 
         // Сброс счетчиков
-        let allowVoting = false; // По умолчанию голосование запрещено
-
-		function resetCounters() {
-			counters = { red: 0, yellow: 0, green: 0 };
-			allowVoting = true; // Разрешаем голосование после сброса
-			updateUI();
-			countersRef.set(counters)
-				.then(() => {
-					document.getElementById('sync-status').textContent = "Сброшено. Можно голосовать!";
-				});
-		}
+        function resetCounters() {
+            countersRef.set({ red: 0, yellow: 0, green: 0 })
+                .then(() => {
+                    document.getElementById('sync-status').textContent = "Сброшено";
+                })
+                .catch((error) => {
+                    console.error("Ошибка сброса:", error);
+                    document.getElementById('sync-status').textContent = "Ошибка сброса";
+                });
+        }
 
         // Обновление интерфейса
         function updateUI() {
@@ -212,13 +198,7 @@
 			document.getElementById('yellow-counter').textContent = counters.yellow;
 			document.getElementById('green-counter').textContent = counters.green;
         }
-		
-		// Блокируем кнопки если голосование завершено
-		const lights = document.querySelectorAll('.light');
-		lights.forEach(light => {
-			light.classList.toggle('disabled', !allowVoting);
-		});
-		
+
         // Отслеживание статуса подключения
         const connectionRef = db.ref('.info/connected');
         connectionRef.on('value', (snap) => {
