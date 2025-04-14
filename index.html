@@ -35,13 +35,28 @@
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
         }
         .light {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            margin: 10px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
+			width: 100px;
+			height: 100px;
+			border-radius: 50%;
+			margin: 10px;
+			cursor: pointer;
+			transition: all 0.3s;
+			position: relative; /* Добавляем для позиционирования счетчика */
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			color: black; /* Цвет текста */
+			font-weight: bold;
+			font-size: calc(16px + 1vw); /* Текст будет масштабироваться */
+			text-shadow: 0 0 3px white; /* Делаем текст читаемым на любом фоне */
+		}
+		.light span {
+			transition: transform 0.2s;
+		}
+		.light span.changed {
+			transform: scale(1.5);
+			color: white;
+		}
         #red { background: #ff0000; }
         #yellow { background: #ffff00; }
         #green { background: #00ff00; }
@@ -85,11 +100,20 @@
         <div id="green" class="light" onclick="countClick('green')"></div>
     </div>
     
-    <div class="counter">
-        Красный: <span id="red-counter">0</span> |
-        Жёлтый: <span id="yellow-counter">0</span> |
-        Зелёный: <span id="green-counter">0</span>
-    </div>
+    <div class="traffic-light">
+		<div id="red" class="light" onclick="countClick('red')" 
+			style="background-color: #ff0000;">
+			<span id="red-counter">0</span>
+		</div>
+		<div id="yellow" class="light" onclick="countClick('yellow')" 
+			style="background-color: #ffff00;">
+			<span id="yellow-counter">0</span>
+		</div>
+		<div id="green" class="light" onclick="countClick('green')" 
+			style="background-color: #00ff00;">
+			<span id="green-counter">0</span>
+		</div>
+	</div>
     
     <button id="reset-btn" onclick="resetCounters()">Сбросить счетчики</button>
     <div id="sync-status">Загрузка...</div>
@@ -134,20 +158,18 @@
 
         // Клик по цвету (атомарное обновление)
         function countClick(color) {
-            countersRef.update({
-                [color]: firebase.database.ServerValue.increment(1)
-            }).then(() => {
-                document.getElementById('sync-status').textContent = "Сохранено";
-            }).catch((error) => {
-                console.error("Ошибка сохранения:", error);
-                document.getElementById('sync-status').textContent = "Ошибка сохранения";
-            });
-            
-            // Анимация
-            const light = document.getElementById(color);
-            light.style.transform = 'scale(0.9)';
-            setTimeout(() => { light.style.transform = 'scale(1)'; }, 200);
-        }
+			counters[color]++;
+			const counterElement = document.getElementById(`${color}-counter`);
+			counterElement.classList.add('changed');
+			setTimeout(() => counterElement.classList.remove('changed'), 200);
+    
+			updateUI();
+			countersRef.update({
+				[color]: firebase.database.ServerValue.increment(1)
+				}).then(() => {
+					document.getElementById('sync-status').textContent = "Сохранено";
+			});
+		}
 
         // Сброс счетчиков
         function resetCounters() {
@@ -163,9 +185,9 @@
 
         // Обновление интерфейса
         function updateUI() {
-            document.getElementById('red-counter').textContent = counters.red;
-            document.getElementById('yellow-counter').textContent = counters.yellow;
-            document.getElementById('green-counter').textContent = counters.green;
+			document.getElementById('red-counter').textContent = counters.red;
+			document.getElementById('yellow-counter').textContent = counters.yellow;
+			document.getElementById('green-counter').textContent = counters.green;
         }
 
         // Отслеживание статуса подключения
