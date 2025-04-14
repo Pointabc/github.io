@@ -69,15 +69,30 @@
             display: inline-block;
         }
         #reset-btn {
-            padding: 12px 25px;
-            font-size: 18px;
-            background: #333;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
+			/* Позиционирование */
+			position: fixed;
+			top: 10px;
+			left: 10px;
+    
+			/* Визуальное скрытие */
+			opacity: 0;
+			width: 20px;
+			height: 20px;
+			padding: 0;
+			margin: 0;
+			border: none;
+			background: transparent;
+    
+			/* Остальные свойства для функциональности */
+			cursor: pointer;
+			z-index: 1000; /* Чтобы кнопка была поверх других элементов */
+			transition: opacity 0.3s;
+		}
+
+		/* Показывать кнопку при наведении (опционально) */
+		#reset-btn:hover {
+			opacity: 0.3;
+		}
         h1 {
             background: rgba(255, 255, 255, 0.8);
             display: inline-block;
