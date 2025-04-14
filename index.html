@@ -10,14 +10,12 @@
             text-align: center;
             margin-top: 50px;
             background: linear-gradient(to bottom, #87CEEB, #1E90FF);
-            /* Новый фон с школьной тематикой */
-            background-image: url('school-bg.jpg'); /* Замените на свою ссылку */
+            background-image: url('school-bg.jpg');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
             position: relative;
         }
-        /* Затемнение фона для лучшей читаемости */
         body::before {
             content: "";
             position: absolute;
@@ -64,12 +62,16 @@
             cursor: pointer;
             margin-top: 10px;
         }
-        /* Стиль для заголовка */
         h1 {
             background: rgba(255, 255, 255, 0.8);
             display: inline-block;
             padding: 10px 20px;
             border-radius: 10px;
+        }
+        #sync-status {
+            margin-top: 10px;
+            font-style: italic;
+            color: #555;
         }
     </style>
 </head>
@@ -89,49 +91,56 @@
     </div>
     
     <button id="reset-btn" onclick="resetCounters()">Сбросить счетчики</button>
+    <div id="sync-status">Загрузка...</div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"></script>
 
     <script>
-        // Конфиг JSONBin.io (ЗАМЕНИТЕ на свои данные!)
-        const BIN_ID = '67fd2dd18561e97a50ff5fc7';  // Пример: '65a1b1e2266cfc3fde83f102'
-        const API_KEY = '$2a$10$eXSewbY5e.u8maglSs2dBej3VguVXx.9BKIqM0lFLWQsMBMAI4xjq'; // Пример: '$2a$10$xxxxxxxxxxxxxxxxxxxxxx'
-        
+        // Конфигурация Firebase (ЗАМЕНИТЕ НА СВОЮ!)
+        const firebaseConfig = {
+			apiKey: "AIzaSyCr0ZwF2b0e2P3KZG9wWaLNhid7m22QPm8",
+			authDomain: "trafficlightcounter.firebaseapp.com",
+			databaseURL: "https://trafficlightcounter-default-rtdb.firebaseio.com",
+			projectId: "trafficlightcounter",
+			storageBucket: "trafficlightcounter.firebasestorage.app",
+			messagingSenderId: "463098092267",
+			appId: "1:463098092267:web:896a1a04f9cd650cad7cae",
+			measurementId: "G-NKKWLKCHK2"
+};
+
+        // Инициализация Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const countersRef = db.ref('counters');
+
         let counters = { red: 0, yellow: 0, green: 0 };
 
-        // Загружаем данные при старте
-        async function loadCounters() {
-            try {
-                const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-                    headers: { 'X-Master-Key': API_KEY }
-                });
-                const data = await response.json();
-                counters = data.record || { red: 0, yellow: 0, green: 0 };
+        // Загрузка данных из Firebase
+        countersRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                counters = data;
                 updateUI();
-            } catch (error) {
-                console.error('Ошибка загрузки:', error);
+                document.getElementById('sync-status').textContent = "Синхронизировано";
             }
-        }
-
-        // Обновляем счетчики на сервере
-        async function saveCounters() {
-            try {
-                await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-                    method: 'PUT',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': API_KEY 
-                    },
-                    body: JSON.stringify(counters)
-                });
-            } catch (error) {
-                console.error('Ошибка сохранения:', error);
-            }
-        }
+        }, (error) => {
+            console.error('Ошибка загрузки:', error);
+            document.getElementById('sync-status').textContent = "Ошибка синхронизации";
+        });
 
         // Клик по цвету
-        async function countClick(color) {
+        function countClick(color) {
             counters[color]++;
             updateUI();
-            await saveCounters();
+            countersRef.set(counters)
+                .then(() => {
+                    document.getElementById('sync-status').textContent = "Сохранено";
+                })
+                .catch((error) => {
+                    document.getElementById('sync-status').textContent = "Ошибка сохранения";
+                });
             
             // Анимация
             const light = document.getElementById(color);
@@ -139,11 +148,14 @@
             setTimeout(() => { light.style.transform = 'scale(1)'; }, 200);
         }
 
-        // Сброс
-        async function resetCounters() {
+        // Сброс счетчиков
+        function resetCounters() {
             counters = { red: 0, yellow: 0, green: 0 };
             updateUI();
-            await saveCounters();
+            countersRef.set(counters)
+                .then(() => {
+                    document.getElementById('sync-status').textContent = "Сброшено";
+                });
         }
 
         // Обновление интерфейса
@@ -153,8 +165,12 @@
             document.getElementById('green-counter').textContent = counters.green;
         }
 
-        // Запускаем при загрузке
-        loadCounters();
+        // Отслеживание статуса подключения
+        const connectionRef = db.ref('.info/connected');
+        connectionRef.on('value', (snap) => {
+            const status = snap.val() ? "онлайн" : "оффлайн";
+            document.getElementById('sync-status').textContent = `Статус: ${status}`;
+        });
     </script>
 </body>
 </html>
