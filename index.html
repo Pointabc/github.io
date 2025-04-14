@@ -98,49 +98,47 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"></script>
 
     <script>
-        // Конфигурация Firebase (ЗАМЕНИТЕ НА СВОЮ!)
+        // Конфигурация Firebase
         const firebaseConfig = {
-			apiKey: "AIzaSyCr0ZwF2b0e2P3KZG9wWaLNhid7m22QPm8",
-			authDomain: "trafficlightcounter.firebaseapp.com",
-			databaseURL: "https://trafficlightcounter-default-rtdb.firebaseio.com",
-			projectId: "trafficlightcounter",
-			storageBucket: "trafficlightcounter.firebasestorage.app",
-			messagingSenderId: "463098092267",
-			appId: "1:463098092267:web:896a1a04f9cd650cad7cae",
-			measurementId: "G-NKKWLKCHK2"
-};
+            apiKey: "AIzaSyCr0ZwF2b0e2P3KZG9wWaLNhid7m22QPm8",
+            authDomain: "trafficlightcounter.firebaseapp.com",
+            databaseURL: "https://trafficlightcounter-default-rtdb.firebaseio.com",
+            projectId: "trafficlightcounter",
+            storageBucket: "trafficlightcounter.firebasestorage.app",
+            messagingSenderId: "463098092267",
+            appId: "1:463098092267:web:896a1a04f9cd650cad7cae",
+            measurementId: "G-NKKWLKCHK2"
+        };
 
         // Инициализация Firebase
         const app = firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const countersRef = db.ref('counters');
+        const countersRef = db.ref('/'); // Работаем с корнем БД
 
         let counters = { red: 0, yellow: 0, green: 0 };
 
         // Загрузка данных из Firebase
         countersRef.on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                counters = data;
-                updateUI();
-                document.getElementById('sync-status').textContent = "Синхронизировано";
-            }
+            const data = snapshot.val() || { red: 0, yellow: 0, green: 0 };
+            counters = data;
+            updateUI();
+            document.getElementById('sync-status').textContent = "Синхронизировано";
+            console.log("Данные получены:", data);
         }, (error) => {
-            console.error('Ошибка загрузки:', error);
-            document.getElementById('sync-status').textContent = "Ошибка синхронизации";
+            console.error("Ошибка загрузки:", error);
+            document.getElementById('sync-status').textContent = "Ошибка загрузки";
         });
 
-        // Клик по цвету
+        // Клик по цвету (атомарное обновление)
         function countClick(color) {
-            counters[color]++;
-            updateUI();
-            countersRef.set(counters)
-                .then(() => {
-                    document.getElementById('sync-status').textContent = "Сохранено";
-                })
-                .catch((error) => {
-                    document.getElementById('sync-status').textContent = "Ошибка сохранения";
-                });
+            countersRef.update({
+                [color]: firebase.database.ServerValue.increment(1)
+            }).then(() => {
+                document.getElementById('sync-status').textContent = "Сохранено";
+            }).catch((error) => {
+                console.error("Ошибка сохранения:", error);
+                document.getElementById('sync-status').textContent = "Ошибка сохранения";
+            });
             
             // Анимация
             const light = document.getElementById(color);
@@ -150,11 +148,13 @@
 
         // Сброс счетчиков
         function resetCounters() {
-            counters = { red: 0, yellow: 0, green: 0 };
-            updateUI();
-            countersRef.set(counters)
+            countersRef.set({ red: 0, yellow: 0, green: 0 })
                 .then(() => {
                     document.getElementById('sync-status').textContent = "Сброшено";
+                })
+                .catch((error) => {
+                    console.error("Ошибка сброса:", error);
+                    document.getElementById('sync-status').textContent = "Ошибка сброса";
                 });
         }
 
